@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Smart Customer Support Classifier using AWS Bedrock and DynamoDB
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: nodejs18.x
+    Architectures:
+      - x86_64
+
+Resources:
+  SupportClassifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: dist/index.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SupportClassificationsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: '*'
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref SupportClassificationsTable
+      Events:
+        AnalyzeQuery:
+          Type: Api
+          Properties:
+            Path: /analyze
+            Method: post
+        GetHistory:
+          Type: Api
+          Properties:
+            Path: /history
+            Method: get
+        GetStats:
+          Type: Api
+          Properties:
+            Path: /stats
+            Method: get
+
+  SupportClassificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: support-classifications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: query_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: query_id
+          KeyType: HASH
+
+Outputs:
+  SupportClassifierApi:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  SupportClassifierFunction:
+    Description: Support Classifier Lambda Function ARN
+    Value: !GetAtt SupportClassifierFunction.Arn
+  SupportClassificationsTable:
+    Description: DynamoDB Table Name
+    Value: !Ref SupportClassificationsTable 
