@@ -9,6 +9,7 @@ Globals:
     Runtime: nodejs18.x
     Architectures:
       - x86_64
+  Region: ap-southeast-2
 
 Resources:
   SupportClassifierFunction:
